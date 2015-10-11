@@ -20,10 +20,16 @@ public class NeuralNet : MonoBehaviour {
     public float[] actual;
     public float[] error;
 
+    float errorTally;
+    int errorCount;
+
 	// Use this for initialization
 	void Start () {
         n = 30;
-        rate = 0.1f;
+        rate = 0.01f;
+
+        errorTally = 0;
+        errorCount = 0;
 
         synone = new float[n, n];
         syntwo = new float[n, n];
@@ -57,18 +63,7 @@ public class NeuralNet : MonoBehaviour {
             medin[i] = 0;
             for (int j = 0; j < 2; j++)
             {
-                medin[i] += synone[j,i] * input[j];
-                if (float.IsNaN(medin[i]))
-                {
-                    Debug.LogError(synone[j, i]);
-                } else if (medin[i] > 100f)
-                {
-                    Debug.Log(j + ", " + i + " : " + medin[i]);
-                    Debug.Log("synone: " + synone[j, i]);
-                    Debug.Log("syntwo: " + syntwo[i, j]);
-                    Debug.Log("sigma: " + sigma[j]);
-                    Debug.Log("sigmoid: " + sigmoid[j]);
-                }
+                medin[i] += synone[j, i] * input[j];
             }
             medout[i] = tanh(medin[i]);
         }
@@ -101,22 +96,30 @@ public class NeuralNet : MonoBehaviour {
             {
                 sigma[i] += error[j] * syntwo[i,j];
             }
-            sigmoid[i] = 1 - medin[i] * medin[i];
+            sigmoid[i] = 1 - medout[i] * medout[i];
         }
         for (int i = 0; i < 2; i++)
         {
             for (int j = 0; j < n; j++)
             {
-                synone[i,j] += rate * sigmoid[j] * sigma[j] * input[i];
+                float delta = rate * sigmoid[j] * sigma[j] * input[i];
+                synone[i,j] += delta;
+                if (delta > 10) {
+                    Debug.Log("delta [" + i + ", " + j + "] : " + delta);
+                    Debug.Log(sigmoid[j]);
+                    Debug.Log(sigma[j]);
+                    Debug.Log(input[i]);
+                }
             }
         }
-        //Debug.Log(Mathf.Sqrt(error[0] * error[0] + error[1] * error[1]));
-      //  Debug.Log(output[0]);
+        errorTally += Mathf.Sqrt(error[0] * error[0] + error[1] * error[1]);
+        errorCount++;
+        Debug.Log(errorTally/errorCount);
     }
 
     float tanh (float x)
     {
-        if (float.IsNaN(x))
+        /*if (float.IsNaN(x))
         {
             //Debug.Log(x);
             x = 5f;
@@ -127,7 +130,7 @@ public class NeuralNet : MonoBehaviour {
         } else if (x < -5f)
         {
             x = -5f;
-        }
+        }*/
         float output = (Mathf.Exp(x) - Mathf.Exp(-x)) / (Mathf.Exp(x) + Mathf.Exp(-x));
         if (float.IsNaN(output))
         {
@@ -145,6 +148,5 @@ public class NeuralNet : MonoBehaviour {
 
         return output;
     }
-
 
 }
